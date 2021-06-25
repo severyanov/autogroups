@@ -13,46 +13,56 @@ chrome.tabs.onUpdated.addListener((tabId, { url }, tab) => {
 });
 
 async function addTabsToGroup(tabs) {
-   const hosts = await getHosts();
+   const rules = await getRules();
+   const groups = new Map(
+      (await chrome.tabGroups.query({}))
+         .map(({ id, title }) => [title, id])
+   );
 
-   tabs.reduce(async (groups, tab) => {
-      return await addTabToGroup(tab, await groups, hosts);
-   }, chrome.tabGroups.query({}));
+   tabs.reduce(
+      async (groups, tab) => await addTabToGroup(tab, await groups, rules),
+      groups
+   );
 }
 
-async function addTabToGroup(tab, groups, hosts) {
+async function addTabToGroup(tab, groups, rules) {
    if (!tab.url) {
       return groups;
    }
 
    const { hostname } = new URL(tab.url);
+   const title = getGroupTitle(hostname, rules);
 
-   if (!hosts.has(hostname)) {
+   if (!title) {
       return groups;
    }
 
-   const group = groups.find(({ title }) => title === hostname);
+   const groupId = groups.get(title);
 
-   if (!group) {
-      const groupId = await chrome.tabs.group({ tabIds: [tab.id] });
-      await chrome.tabGroups.update(groupId, { title: hostname });
-      return chrome.tabGroups.query({});
-   }
-
-   if (tab.groupId !== group.id) {
-      await chrome.tabs.group({
-         tabIds: [tab.id],
-         groupId: group.id
-      });
+   if (!groupId) {
+      const newGroupId = await chrome.tabs.group({ tabIds: [tab.id] });
+      await chrome.tabGroups.update(newGroupId, { title });
+      groups.set(title, newGroupId);
+   } else if (tab.groupId !== groupId) {
+      await chrome.tabs.group({ tabIds: [tab.id], groupId });
    }
 
    return groups;
 }
 
-async function getHosts() {
+async function getRules() {
    return new Promise((resolve) => {
-      chrome.storage.sync.get('hostnames', ({ hostnames }) => {
-         resolve(new Set(hostnames || []));
+      chrome.storage.sync.get('settings', ({ settings }) => {
+         try {
+            resolve(JSON.parse(settings)?.rules || []);
+         } catch {
+            resolve([]);
+         }
       });
    });
+}
+
+function getGroupTitle(hostname, rules) {
+   const rule = rules.find(({ sites }) => sites.includes(hostname));
+   return rule?.name;
 }

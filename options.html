@@ -1,12 +1,65 @@
 <!DOCTYPE html>
 <html>
 
+<head>
+    <style>
+        body {
+            --padding: 8px;
+            height: 500px;
+            max-height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #groups {
+            flex-grow: 1;
+        }
+
+        #groupTemplate {
+            display: none;
+        }
+
+        .group {
+            display: grid;
+            grid-template-columns: max-content 1fr max-content;
+            grid-template-rows: 24px 1fr;
+            grid-row-gap: var(--padding);
+            grid-column-gap: var(--padding);
+            margin-bottom: var(--padding);
+            border-bottom: 1px solid #ccc;
+            padding-bottom: var(--padding);
+        }
+
+        .group-sites__label {
+            text-align: right;
+        }
+
+        .group-sites__value {
+            resize: none;
+        }
+
+        footer {
+            padding: 16px 0px;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+
 <body>
-    <div>
-        <p>Group tabs from following domains:</p>
-        <textarea id="hostnames" style="width: 500px; height: 300px;"></textarea>
+    <div id="groups"></div>
+    <section id="groupTemplate" class="group">
+        <label class="group-name__label">Group name</label>
+        <input class="group-name__value" type="text" />
+        <button class="group-name__delete">X</button>
+        <label class="group-sites__label">Sites</label>
+        <textarea class="group-sites__value" rows="3"></textarea>
+    </section>
+    <footer class="footer">
+        <a id="add" href="#">Add new rule</a>
         <button id="save">Save</button>
-    </div>
+    </footer>
 </body>
 <script src="options.js"></script>
 
